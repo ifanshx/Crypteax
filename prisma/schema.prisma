@@ -1,0 +1,358 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums ---
+
+// Peran pengguna dalam platform.
+// 'ADMIN' adalah peran yang memiliki hak istimewa untuk membuat dan mengelola koleksi/raffle.
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+// Tipe aktivitas yang dicatat dalam log sistem.
+// Menambahkan 'COLLECTION_CREATE' dan 'RAFFLE_CREATE' secara eksplisit
+// menegaskan bahwa ini adalah aktivitas yang dilacak.
+enum ActivityType {
+  STAKE             // Pengguna memulai proses staking NFT.
+  UNSTAKE           // Pengguna mengakhiri proses staking NFT.
+  CLAIM_REWARDS     // Pengguna berhasil mengklaim reward dari staking.
+  PROFILE_UPDATE    // Pengguna memperbarui informasi profil mereka.
+  MINT_NFT          // Pengguna berhasil melakukan minting NFT dari sebuah koleksi.
+  RAFFLE_JOIN       // Pengguna membeli tiket dan bergabung dalam sebuah raffle.
+  RAFFLE_WIN        // Pengguna terpilih sebagai pemenang dalam sebuah raffle.
+  RAFFLE_CREATE     // Admin atau Moderator berhasil membuat raffle baru.
+  RAFFLE_DRAW       // Sistem menarik pemenang untuk sebuah raffle.
+  NFT_TRANSFER      // NFT ditransfer (internal/eksternal).
+  COLLECTION_CREATE // Admin berhasil membuat entri koleksi NFT baru di launchpad.
+  COLLECTION_UPDATE // Admin berhasil memperbarui detail koleksi NFT.
+  COLLECTION_DEPLOY // Kontrak koleksi berhasil di-deploy ke blockchain.
+  COLLECTION_VERIFY // Admin atau Moderator memverifikasi sebuah koleksi NFT.
+  USER_BLOCKED      // Admin memblokir akun pengguna.
+  SYSTEM_MAINTENANCE // Aktivitas terkait pemeliharaan sistem (opsional, untuk log internal).
+  USER_REFERRAL     // Pengguna berhasil mereferensikan pengguna baru ke platform.
+  REFERRAL_POINTS_EARNED // Pengguna mendapatkan poin dari program referral.
+  POINTS_SPENT      // Pengguna menggunakan poin.
+  POINTS_ADJUSTMENT // Penyesuaian poin oleh admin.
+}
+
+// Status operasional dari sebuah koleksi NFT dalam konteks Launchpad.
+// Ini krusial untuk alur kerja pembuatan dan peluncuran koleksi.
+enum CollectionStatus {
+  PENDING             // Koleksi baru dibuat oleh admin, menunggu konfigurasi atau deployment
+  DEPLOYING           // Kontrak koleksi sedang dalam proses deployment ke blockchain
+  DEPLOYMENT_FAILED   // Deployment kontrak koleksi gagal (memerlukan intervensi admin)
+  ACTIVE              // Koleksi sudah aktif, kontrak deployed, siap untuk mint/interaksi
+  INACTIVE            // Koleksi tidak aktif (misal: mint selesai, dihentikan sementara oleh admin)
+  ARCHIVED            // Koleksi diarsipkan (tidak ditampilkan ke publik)
+}
+
+// Tipe standar kontrak NFT yang didukung oleh Launchpad.
+enum CollectionType {
+  ERC721 // Standar untuk NFT unik
+  ERC1155 // Standar untuk NFT semi-fungible
+  ERC404 // Standar untuk NFT yang belum ditentukan
+}
+
+// Tipe poin yang diberikan atau digunakan dalam sistem referral/loyalty.
+enum PointType {
+  SIGNUP_BONUS           // Poin yang diberikan saat pendaftaran melalui referral.
+  MINT_COMMISSION        // Poin yang diberikan saat referred user melakukan mint.
+  STAKE_REWARD           // Poin yang diberikan sebagai reward staking harian.
+  DAILY_STAKE_REWARD     // Poin yang diberikan setiap hari untuk staking aktif.
+  RAFFLE_TICKET_BONUS    // Poin yang diberikan saat referred user membeli tiket raffle.
+  RAFFLE_ENTRY_BONUS     // Poin yang diberikan saat referred user berpartisipasi dalam raffle.
+  REFERRAL_BONUS         // Poin yang diberikan kepada referrer saat referred user berpartisipasi.
+  ADMIN_ADJUSTMENT       // Poin disesuaikan secara manual oleh admin.
+  RAFFLE_WINNER_BONUS    // Poin yang diberikan kepada pemenang raffle.
+  LOYALTY_REWARD         // Poin yang diberikan sebagai reward loyalitas (misal: untuk pengguna aktif).
+  REDEEM                 // Poin digunakan/ditukar untuk reward tertentu.
+}
+
+// --- Models ---
+
+// Model untuk pengguna platform.
+// Peran 'ADMIN' di sini adalah kunci untuk otorisasi di lapisan aplikasi.
+model User {
+  user_id           String          @id @default(cuid())
+  user_username     String?         @unique // Opsional, bisa diatur nanti atau tidak sama sekali
+  user_image        String?         // URL gambar profil
+  user_role         UserRole        @default(USER) // Peran pengguna (USER, ADMIN, MODERATOR)
+  user_createdAt    DateTime        @default(now())
+  user_updatedAt    DateTime        @updatedAt
+  user_address      String          @unique        // Alamat wallet utama pengguna, krusial untuk identifikasi on-chain
+  user_isBlocked    Boolean         @default(false) // Status blokir pengguna
+
+  // Bidang baru untuk sistem referral dan poin
+  user_referralCode String          @unique @default(cuid()) // Kode referral unik untuk user ini, otomatis dibuat
+  user_referredBy   String?         // ID user yang mereferensikan user ini (referrer)
+  referredByUser    User?           @relation("UserReferrals", fields: [user_referredBy], references: [user_id]) // Relasi ke user yang mereferensikan
+
+  referredUsers     User[]          @relation("UserReferrals") // User yang direferensikan oleh user ini (pemberi referral)
+
+  user_points       Int             @default(0) // Total poin yang dimiliki user (Asumsi tetap INT untuk kesederhanaan, jika perlu DECIMAL, ubah tipe ini)
+
+  stakedNFTs         Staked[]
+  activities         Activity[]
+  raffleParticipants RaffleParticipant[]
+  leaderboards       StakeLeaderboard[]
+  rewardTransactions RewardTransaction[]
+
+  // Relasi eksplisit ke koleksi dan raffle yang dibuat oleh user ini.
+  // Dalam kasus launchpad Anda, ini akan merujuk ke user dengan 'user_role: ADMIN'.
+  createdCollections NftCollection[] @relation("CollectionCreator")
+  createdRaffles     Raffle[]        @relation("RaffleCreator")
+
+  // Relasi ke tabel ReferralPoint
+  referralPointsGiven    ReferralPoint[] @relation("ReferrerPoints") // Poin referral yang user ini berikan (sebagai referrer)
+  referralPointsReceived ReferralPoint[] @relation("ReferredUserPoints") // Poin referral yang user ini terima (sebagai yang direferensikan)
+}
+
+// Model baru untuk melacak transaksi poin referral secara detail.
+// Ini memungkinkan fleksibilitas dalam jenis dan status poin.
+model ReferralPoint {
+  point_id           String    @id @default(cuid())
+
+  // Relasi ke user yang mereferensikan (referrer)
+  point_referrerId   String
+  referrer           User      @relation("ReferrerPoints", fields: [point_referrerId], references: [user_id])
+
+  // Relasi ke user yang direferensikan (referred user)
+  point_referredUserId String
+  referredUser         User      @relation("ReferredUserPoints", fields: [point_referredUserId], references: [user_id])
+
+  point_amount       Int       // Jumlah poin yang diberikan (Asumsi tetap INT, jika perlu DECIMAL, ubah tipe ini)
+  point_type         PointType // Tipe poin (dari enum PointType)
+  point_status       String    @default("COMPLETED") // Status poin (COMPLETED, PENDING, CANCELLED)
+  point_description  String?   @db.Text // Deskripsi detail poin (misal: "Bonus pendaftaran dari referral A1B2C3")
+  point_createdAt    DateTime  @default(now())
+
+  // Opsional: ID transaksi on-chain jika relevan (misal: terkait minting yang memicu poin)
+  point_txHash       String?   @unique
+
+  @@index([point_referrerId])
+  @@index([point_referredUserId])
+  @@index([point_type]) // Indeks pada PointType untuk query cepat
+  @@index([point_status])
+  @@index([point_createdAt])
+}
+
+// Model utama untuk mendefinisikan sebuah Koleksi NFT dalam Launchpad.
+// Hanya ADMIN yang dapat membuat entri di sini.
+model NftCollection {
+  collection_id                 String         @id @default(cuid())
+  collection_name               String         // Nama koleksi (misal: "Bored Ape Yacht Club")
+  collection_symbol             String?        // Simbol koleksi (misal: "BAYC")
+  collection_description        String?        @db.Text // Deskripsi koleksi, bisa panjang
+  collection_imageUrl           String?        // URL gambar logo/thumbnail koleksi (penting untuk UI)
+  collection_bannerUrl          String?        // URL gambar banner koleksi (penting untuk UI)
+  collection_externalUrl        String?        // Link eksternal proyek (misal: OpenSea listing, website proyek)
+  collection_twitterUrl         String?
+  collection_discordUrl         String?
+  collection_websiteUrl         String?
+
+  // Informasi Smart Contract yang di-deploy (atau akan di-deploy)
+  collection_type               CollectionType @default(ERC721) // Tipe standar kontrak NFT (ERC721/ERC1155)
+  collection_contractAddress    String         @unique @db.Text // Alamat kontrak NFT di blockchain (WAJIB UNIK untuk setiap koleksi)
+  collection_deployedTxHash     String?        @unique // Hash transaksi deployment kontrak (untuk verifikasi on-chain)
+  collection_blockchainNetwork  String?        // Jaringan blockchain tempat kontrak dideploy (misal: "Ethereum Mainnet", "Polygon")
+
+  // Konfigurasi Fase Minting (untuk launchpad yang memungkinkan minting langsung)
+  collection_mintPrice          Decimal?       @db.Decimal(65, 30) // Harga per NFT saat mint
+  collection_mintCurrency       String?        // Simbol/alamat token pembayaran mint (misal: "ETH", "USDC")
+  collection_maxSupply          Int?           // Total suplai maksimal NFT yang bisa di-mint dari kontrak
+  collection_currentSupply      Int            @default(0) // Jumlah NFT yang sudah berhasil di-mint dari koleksi ini
+  collection_mintLimitPerWallet Int?           // Batas mint per wallet per fase
+  collection_publicMintStartDate DateTime?      // Tanggal dan waktu mulai fase public mint
+  collection_publicMintEndDate  DateTime?      // Tanggal dan waktu berakhirnya fase public mint
+  collection_preMintStartDate   DateTime?      // Tanggal dan waktu mulai fase presale/whitelist mint (opsional)
+  collection_preMintEndDate     DateTime?      // Tanggal dan waktu berakhirnya fase presale/whitelist mint (opsional)
+  collection_hasWhitelist       Boolean        @default(false) // Indikator apakah koleksi ini memiliki fase whitelist
+  // Catatan: Detail alamat whitelist sebaiknya dikelola di tabel terpisah (WhitelistAddress) atau mekanisme caching eksternal
+  collection_gasFeeInUSD        Decimal?       @db.Decimal(65, 30) // Estimasi biaya gas saat mint (informasi tambahan)
+
+  // Status dan Verifikasi Koleksi dalam Sistem Launchpad
+  collection_status             CollectionStatus @default(PENDING) // Status siklus hidup koleksi di launchpad
+  collection_verified           Boolean        @default(false)   // Apakah koleksi ini telah diverifikasi oleh staf platform
+  collection_verifiedBy         String?        // ID user ADMIN/MODERATOR yang melakukan verifikasi
+
+  // Audit: Siapa yang Membuat Entri Koleksi ini di Database Launchpad
+  collection_creatorAddress     String         // Alamat wallet kreator koleksi di blockchain (bisa berbeda dari collection_createdBy)
+  collection_createdBy          String         // ID user platform (harus ADMIN) yang membuat entri koleksi ini
+  collectionCreator             User           @relation("CollectionCreator", fields: [collection_createdBy], references: [user_id])
+
+  collection_createdAt          DateTime       @default(now()) // Timestamp pembuatan entri koleksi di database
+  collection_updatedAt          DateTime       @updatedAt        // Timestamp pembaruan entri terakhir
+
+  // Relasi
+  items                         NftItem[]      // Relasi One-to-Many: Setiap koleksi memiliki banyak NftItem
+  raffles                       Raffle[]       @relation("CollectionRaffles") // Relasi One-to-Many: Koleksi dapat memiliki raffle
+
+  // Indeks untuk optimasi performa kueri
+  @@index([collection_contractAddress])
+  @@index([collection_name])
+  @@index([collection_status])
+  @@index([collection_createdBy])
+  @@index([collection_type])
+  @@index([collection_publicMintStartDate])
+  @@index([collection_hasWhitelist])
+}
+
+// Model untuk setiap NFT individu dalam sebuah koleksi.
+// Data ini biasanya diisi setelah NFT berhasil di-mint (baik on-chain maupun off-chain).
+model NftItem {
+  nft_id              String        @id @default(cuid())
+  nft_contractAddress String        @db.Text // Alamat kontrak koleksi tempat NFT ini berada
+  nft_tokenId         Int           // ID token unik dari NFT dalam kontraknya
+  nft_ownerAddress    String        // Alamat wallet owner NFT saat ini (penting untuk kepemilikan dinamis)
+  nft_imageUrl        String?       // URL gambar NFT (misal: dari IPFS/Arweave)
+  nft_name            String?       // Nama spesifik NFT (misal: "Bored Ape #1234")
+  nft_description     String?       @db.Text // Deskripsi detail NFT
+  nft_attributes      Json?         // Atribut metadata NFT dalam format JSON (sesuai standar ERC-721/1155)
+  nft_collectionId    String        // ID koleksi tempat NFT ini berada
+  nft_collection      NftCollection @relation(fields: [nft_collectionId], references: [collection_id])
+
+  stakedEntry         Staked?       // Relasi One-to-One: Satu NftItem bisa di-stake (atau tidak)
+  raffleWinnerFor     Raffle?       @relation("RaffleWinningNft") // Relasi One-to-One: Jika NFT ini menjadi hadiah/pemenang sebuah raffle
+
+  nft_createdAt       DateTime      @default(now()) // Timestamp saat entri NFT dibuat di database
+  nft_updatedAt       DateTime      @updatedAt        // Timestamp pembaruan entri terakhir
+
+  @@unique([nft_contractAddress, nft_tokenId], name: "UniqueNFTItem") // Kombinasi kontrak dan token ID harus unik untuk setiap NFT
+  @@index([nft_ownerAddress])    // Indeks untuk mencari NFT berdasarkan owner
+  @@index([nft_collectionId])    // Indeks untuk mencari NFT berdasarkan koleksinya
+}
+
+// Model untuk melacak NFT yang di-stake oleh pengguna.
+// Hanya NFT yang sudah ada di `NftItem` yang dapat di-stake.
+model Staked {
+  staked_id                String    @id @default(cuid())
+  staked_userId            String    // ID pengguna yang melakukan staking
+  staked_user              User      @relation(fields: [staked_userId], references: [user_id])
+  staked_nftItemId         String    @unique // Referensi langsung ke NftItem yang di-stake (unik, satu NFT hanya bisa di-stake satu kali)
+  staked_nftItem           NftItem   @relation(fields: [staked_nftItemId], references: [nft_id])
+  staked_stakeTimestamp    DateTime  @default(now()) // Timestamp saat NFT di-stake
+  staked_unstakeTimestamp  DateTime? // Timestamp saat NFT di-unstake (null jika masih di-stake)
+  staked_isStaked          Boolean   @default(true) // Status staking (true: di-stake, false: sudah di-unstake)
+  staked_isEmergency       Boolean   @default(false) // Flag untuk kondisi unstake darurat (jika ada fitur tersebut)
+  staked_claimedRewards    Decimal   @default(0.0) @db.Decimal(65, 30) // Total reward yang sudah diklaim dari stake spesifik ini
+  staked_lastRewardClaimedAt DateTime? // Timestamp klaim reward terakhir dari stake ini
+
+  rewardTransactions       RewardTransaction[] // Relasi One-to-Many: Satu entri stake bisa menghasilkan banyak transaksi reward
+
+  @@index([staked_userId])    // Indeks untuk mencari NFT yang di-stake oleh user tertentu
+  @@index([staked_isStaked])  // Indeks untuk mencari NFT yang masih di-stake atau sudah di-unstake
+}
+
+// Model untuk melacak setiap transaksi reward (misal: klaim reward, distribusi bonus).
+// Membantu dalam audit dan pelacakan ekonomi reward.
+model RewardTransaction {
+  rewardTx_id         String    @id @default(cuid())
+  rewardTx_userId     String    // ID pengguna yang terlibat dalam transaksi reward
+  rewardTx_user       User      @relation(fields: [rewardTx_userId], references: [user_id])
+  rewardTx_stakedId   String?   // Opsional: ID entri Staked jika reward terkait dengan stake spesifik
+  rewardTx_staked     Staked?   @relation(fields: [rewardTx_stakedId], references: [staked_id])
+  rewardTx_amount     Decimal   @db.Decimal(65, 30) // Jumlah reward yang ditransaksikan
+  rewardTx_type       String    // Tipe transaksi reward (misal: "DAILY_STAKE_REWARD", "RAFFLE_BONUS", "CLAIM")
+  rewardTx_timestamp  DateTime  @default(now()) // Timestamp transaksi reward
+
+  @@index([rewardTx_userId])   // Indeks untuk mencari transaksi reward berdasarkan user
+  @@index([rewardTx_stakedId]) // Indeks untuk mencari transaksi reward berdasarkan stake
+  @@index([rewardTx_timestamp])// Indeks untuk mencari transaksi reward berdasarkan waktu
+}
+
+// Model untuk leaderboard staking.
+// Perlu ada logika di aplikasi untuk mengupdate rank secara berkala.
+model StakeLeaderboard {
+  leaderboard_id          String    @id @default(cuid())
+  leaderboard_userId      String    @unique // ID pengguna, setiap user hanya memiliki satu entri di leaderboard
+  leaderboard_user        User      @relation(fields: [leaderboard_userId], references: [user_id])
+  leaderboard_totalStakedNfts Int     @default(0) // Total NFT yang di-stake oleh user ini
+  leaderboard_totalRewardsClaimed Decimal @default(0.0) @db.Decimal(65, 30) // Total reward yang diklaim oleh user ini
+  leaderboard_rank        Int     @default(0) // Peringkat user (perlu dihitung ulang secara berkala)
+  leaderboard_lastUpdated DateTime  @updatedAt // Timestamp terakhir leaderboard diupdate
+
+  @@index([leaderboard_totalStakedNfts])      // Indeks untuk sorting/filter berdasarkan jumlah NFT di-stake
+  @@index([leaderboard_totalRewardsClaimed]) // Indeks untuk sorting/filter berdasarkan total reward diklaim
+  @@index([leaderboard_rank])                // Indeks untuk sorting berdasarkan rank
+}
+
+// Model untuk acara Raffle.
+// Hanya ADMIN yang dapat membuat raffle di launchpad ini.
+model Raffle {
+  raffle_id             String              @id @default(uuid())
+  raffle_title          String              // Judul raffle
+  raffle_description    String?             // Deskripsi raffle
+  raffle_totalTickets   Int                 // Total tiket yang tersedia untuk raffle ini
+  raffle_ticketPrice    Decimal             @db.Decimal(65, 30) // Harga per tiket raffle
+  raffle_maxEntriesPerUser Int            // Batas maksimal tiket yang bisa dibeli oleh satu user
+  raffle_startDate      DateTime            // Tanggal dan waktu mulai raffle
+  raffle_endDate        DateTime            // Tanggal dan waktu berakhirnya raffle
+  raffle_raffleBanner   String?             // URL gambar banner raffle
+  raffle_ticketsSold    Int                 @default(0) // Jumlah tiket yang sudah terjual
+  raffle_active         Boolean             @default(true) // Status raffle: aktif/tidak aktif
+  raffle_winnerAddress  String?             // Alamat wallet pemenang raffle
+  raffle_winnerNftItemId String?            @unique // ID NftItem yang dimenangkan (jika raffle spesifik NFT sebagai hadiah)
+  raffle_winnerNftItem  NftItem?            @relation("RaffleWinningNft", fields: [raffle_winnerNftItemId], references: [nft_id]) // Relasi ke NftItem yang dimenangkan
+
+  raffle_createdAt      DateTime            @default(now()) // Timestamp pembuatan raffle
+  raffle_updatedAt      DateTime            @updatedAt        // Timestamp pembaruan raffle terakhir
+
+  participants          RaffleParticipant[] // Relasi One-to-Many: Satu raffle memiliki banyak partisipan
+
+  raffle_collectionId   String?             // Opsional: ID koleksi jika raffle adalah bagian dari koleksi tertentu
+  raffle_collection     NftCollection?      @relation("CollectionRaffles", fields: [raffle_collectionId], references: [collection_id])
+
+  // Audit: Siapa yang Membuat Raffle ini di Database Launchpad
+  raffle_createdBy      String              // ID user platform (harus ADMIN) yang membuat entri raffle ini
+  raffleCreator         User                @relation("RaffleCreator", fields: [raffle_createdBy], references: [user_id])
+
+
+  @@index([raffle_active, raffle_endDate]) // Indeks untuk mencari raffle yang aktif dan berdasarkan tanggal berakhir
+  @@index([raffle_title])                  // Indeks untuk mencari raffle berdasarkan judul
+  @@index([raffle_collectionId])           // Indeks untuk mencari raffle berdasarkan koleksi
+  @@index([raffle_createdBy])              // Indeks untuk mencari raffle yang dibuat oleh user tertentu
+}
+
+// Model untuk partisipasi pengguna dalam Raffle.
+// Mencatat berapa banyak tiket yang dibeli user dalam satu raffle.
+model RaffleParticipant {
+  participant_id        String    @id @default(uuid())
+  participant_raffleId  String    // ID raffle yang diikuti partisipan
+  participant_raffle    Raffle    @relation(fields: [participant_raffleId], references: [raffle_id])
+  participant_userId    String    // ID pengguna yang berpartisipasi
+  participant_user      User      @relation(fields: [participant_userId], references: [user_id])
+  participant_walletAddress String    // Alamat wallet partisipan
+  participant_ticketsBought Int       // Jumlah tiket yang dibeli partisipan untuk raffle ini
+  participant_purchaseDate  DateTime  @default(now()) // Timestamp pembelian tiket
+
+  // Satu user hanya bisa memiliki satu entri partisipan per raffle.
+  // Total tiket yang dibeli diakumulasikan dalam `participant_ticketsBought`.
+  @@unique([participant_raffleId, participant_userId], name: "UniqueRaffleParticipant")
+  @@index([participant_raffleId, participant_walletAddress]) // Indeks untuk mencari partisipan berdasarkan raffle dan wallet
+}
+
+// Model untuk log aktivitas pengguna.
+// Penting untuk audit, debugging, dan analisis perilaku pengguna di platform.
+model Activity {
+  activity_id           String     @id @default(cuid())
+  activity_userId       String     // ID pengguna yang melakukan aktivitas
+  activity_user         User       @relation(fields: [activity_userId], references: [user_id])
+  activity_type         ActivityType // Tipe aktivitas (misal: STAKE, UNSTAKE, MINT_NFT, COLLECTION_CREATE)
+  activity_description  String     @db.Text // Deskripsi detail aktivitas (misal: "Staked Bored Ape #1234")
+  activity_timestamp    DateTime   @default(now()) // Timestamp aktivitas
+  activity_txHash       String?    @unique // Hash transaksi blockchain terkait aktivitas (opsional, unik)
+
+  @@index([activity_userId])   // Indeks untuk mencari aktivitas berdasarkan user
+  @@index([activity_timestamp])// Indeks untuk mencari aktivitas berdasarkan waktu
+  @@index([activity_type])     // Indeks untuk mencari aktivitas berdasarkan tipenya
+}
