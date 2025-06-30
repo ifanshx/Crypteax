@@ -1,3 +1,4 @@
+// context/index.tsx
 'use client'
 
 import { wagmiAdapter, projectId } from '@/config'
@@ -6,6 +7,8 @@ import { createAppKit } from '@reown/appkit/react'
 import React, { type ReactNode } from 'react'
 import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi'
 import { defineChain } from '@reown/appkit/networks';
+import { siweConfig } from '@/config/siweConfig'; // Import siweConfig yang baru dibuat
+import { SessionProvider } from 'next-auth/react'
 
 // Set up queryClient
 const queryClient = new QueryClient()
@@ -39,7 +42,7 @@ const TeaSepolia = defineChain({
 const metadata = {
     name: 'Cryptea',
     description: 'Stake, Win, and LFG CRYPTEA!',
-    url: 'https://appkitexampleapp.com', // origin must match your domain & subdomain
+    url: 'https://cryptea-vert.vercel.app', // origin must match your domain & subdomain
     icons: ['https://avatars.githubusercontent.com/u/179229932']
 }
 
@@ -47,17 +50,16 @@ const metadata = {
 export const modal = createAppKit({
     adapters: [wagmiAdapter],
     projectId,
-    networks: [TeaSepolia],
-    defaultNetwork: TeaSepolia,
+    networks: [TeaSepolia], // Memastikan TeaSepolia ada di sini.
+    defaultNetwork: TeaSepolia, // Memastikan TeaSepolia adalah default network.
     metadata: metadata,
     features: {
         analytics: true,
         swaps: false,
         email: false,
         socials: ['google', 'github', 'discord'],
-
-    }
-
+    },
+    siweConfig: siweConfig, // Teruskan siweConfig di sini.
 })
 
 function ContextProvider({ children, cookies }: { children: ReactNode; cookies: string | null }) {
@@ -65,7 +67,11 @@ function ContextProvider({ children, cookies }: { children: ReactNode; cookies: 
 
     return (
         <WagmiProvider config={wagmiAdapter.wagmiConfig as Config} initialState={initialState}>
-            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+            <QueryClientProvider client={queryClient}>
+                <SessionProvider basePath="/api/auth" >
+                    {children}
+                </SessionProvider>
+            </QueryClientProvider>
         </WagmiProvider>
     )
 }
