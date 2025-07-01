@@ -23,9 +23,7 @@ const TeaSepolia = defineChain({
   blockExplorers: {
     default: { name: "Tea Sepolia Testnet", url: "https://sepolia.tea.xyz" },
   },
-  contracts: {
-    // Add the contracts here
-  },
+  contracts: {},
 });
 
 export const networks = [TeaSepolia];

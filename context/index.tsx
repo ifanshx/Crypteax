@@ -53,6 +53,13 @@ export const modal = createAppKit({
     networks: [TeaSepolia], // Memastikan TeaSepolia ada di sini.
     defaultNetwork: TeaSepolia, // Memastikan TeaSepolia adalah default network.
     metadata: metadata,
+    enableCoinbase: false,
+    enableWalletGuide: false,
+    coinbasePreference: 'smartWalletOnly',
+    themeVariables: {
+        '--w3m-border-radius-master': '1px',
+        '--w3m-font-family': 'Telegraf',
+    },
     features: {
         analytics: true,
         swaps: false,

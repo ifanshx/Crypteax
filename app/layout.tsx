@@ -9,6 +9,10 @@ import { ToastProvider } from "@/context/ToastContext";
 export const metadata: Metadata = {
   title: "Cryptea",
   description: "Stake, Win, and LFG CRYPTEA!",
+  keywords: ['chain development toolkits such as Arbitrum Orbit',
+    'Foundry, Viem, Hardhat, and Ether.', 'TypeScript, Next.js, and React',
+    'Layer 2 solutions, wallets, and ERC standards ( ERC-20, ERC- 721)',
+    'Web3 technologies (EVM, Solidity, ethers.js/web3.js)', 'real-time systems (WebSockets, WebRTC)'],
   openGraph: {
     type: "website",
     url: "https://cryptea-vert.vercel.app",

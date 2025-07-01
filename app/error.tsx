@@ -1,14 +1,12 @@
-// app/error.tsx
-'use client'; // Error components must be Client Components
+'use client';
 
 import { useEffect } from 'react';
-import { XCircle } from 'lucide-react'; // Menggunakan ikon XCircle dari lucide-react
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'; // Menggunakan komponen Card
-import { Button } from '@/components/ui/button'; // Menggunakan komponen Button
-
-export default function Error({
+import Link from 'next/link';
+import { AlertCircle, Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+// Custom Error Page for the Home Page
+export default function HomeErrorPage({
     error,
-    reset,
 }: {
     error: Error & { digest?: string };
     reset: () => void;
@@ -18,46 +16,32 @@ export default function Error({
         console.error(error);
     }, [error]);
 
+    // Render Custom Error Page for Home Page
     return (
-        <div
-            className="relative flex min-h-screen items-center justify-center bg-background overflow-hidden"
-        >
-            {/* Background Effect: Menggunakan gradient dan animasi */}
-            <div
-                className="absolute inset-0 bg-gradient-to-br from-background to-destructive/10 z-0 opacity-90 animate-fade-in-up duration-1000" // Warna gradient ke destructive untuk nuansa error
-            ></div>
-
-            <Card
-                className="z-10 p-8 text-center max-w-md mx-4 shadow-2xl border border-destructive/30 rounded-xl animate-zoom-in duration-700 delay-200" // Border ke destructive, bayangan lebih kuat, animasi zoom-in
-            >
-                <CardHeader className="p-0 pb-4 flex flex-col items-center">
-                    <XCircle className="size-16 text-destructive mb-4 animate-bounce-in-down duration-500" /> {/* Ikon XCircle yang lebih besar dengan warna destructive dan animasi */}
-                    <CardTitle className="text-4xl font-extrabold text-destructive mb-2 tracking-tight">
-                        Oops, Something Broke!
-                    </CardTitle>
-                    <CardDescription className="text-lg text-muted-foreground leading-relaxed">
-                        It looks like we spilled the tea...
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="p-0 pt-4">
-                    <p className="text-md text-foreground mb-6">
-                        We&#39;re sorry, an unexpected error occurred. Please try reloading the page.
-                    </p>
-                    {error.digest && (
-                        <p className="text-xs text-muted-foreground break-all mb-4 opacity-70">
-                            Error Ref: <code>{error.digest}</code>
-                        </p>
-                    )}
+        <div className="bg-gray-800 px-4 py-10 text-gray-300 shadow-lg sm:px-6 lg:px-8">
+            <div className="text-center">
+                <AlertCircle className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                <h3 className="mb-4 text-3xl font-bold text-gray-100">
+                    Error Loading Home Page
+                </h3>
+                <p className="mb-8 text-xl text-gray-400">
+                    We are having trouble retrieving the Home page. This could likely be
+                    due to network issues.
+                    <br />
+                </p>
+                <div className="flex flex-col justify-center space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
                     <Button
-                        variant="destructive" // Menggunakan variant destructive dari Button UI
-                        size="lg" // Ukuran tombol besar
-                        onClick={() => reset()}
-                        className="rounded-full font-semibold text-lg px-8 py-4 shadow-md hover:scale-105 transition-transform duration-300 ease-out"
+                        asChild
+                        variant="outline"
+                        className="inline-flex items-center rounded-md border border-gray-600 bg-gray-900 px-6 py-3 text-base font-medium text-gray-300 transition-colors duration-200 hover:bg-gray-800 hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-offset-2 focus:ring-offset-gray-900"
                     >
-                        Try Again
+                        <Link href="/">
+                            <Home className="mr-2 h-5 w-5" />
+                            Back to Dashboard
+                        </Link>
                     </Button>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         </div>
     );
 }
