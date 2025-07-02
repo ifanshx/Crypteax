@@ -1,121 +1,71 @@
-// file: components/common/LoadingSkeleton.tsx
-import { cn } from "@/lib/utils"; //
-import { Skeleton } from "@/components/ui/skeleton"; //
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; //
+// components/common/LoadingSkeleton.tsx
+import React from 'react';
 
-/**
- * @interface LoadingSkeletonProps
- * @extends React.ComponentProps<'div'>
- * @property {'dashboard-summary' | 'table-list' | 'text-block' | 'chart'} [type] - Jenis skeleton yang akan dirender.
- * - 'dashboard-summary': Meniru tata letak kartu ringkasan dashboard.
- * - 'table-list': Meniru daftar atau tabel.
- * - 'text-block': Meniru blok teks.
- * - 'chart': Meniru layout chart.
- */
-interface LoadingSkeletonProps extends React.ComponentProps<'div'> {
-    type?: 'dashboard-summary' | 'table-list' | 'text-block' | 'chart';
-}
+export default function LoadingSkeleton() {
+    return (
+        <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 animate-pulse p-6 lg:p-10">
+            {/* Skeleton untuk Topbar (Jika tidak ada di layout utama, ini akan menjadi overlay) */}
+            {/* Mengingat topbar sudah fixed dan dimuat lebih awal, ini lebih untuk konten utama */}
+            <div className="fixed left-16 top-0 right-0 h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-10 hidden md:block"></div>
 
-/**
- * LoadingSkeleton Component
- *
- * Komponen ini menampilkan placeholder animasi (skeleton) saat data sedang dimuat,
- * memberikan umpan balik visual kepada pengguna.
- *
- * @param {LoadingSkeletonProps} props - Properti untuk menyesuaikan tampilan skeleton.
- * @returns {JSX.Element} Komponen skeleton loading.
- */
-export default function LoadingSkeleton({
-    className,
-    type = 'dashboard-summary',
-    ...props
-}: LoadingSkeletonProps) {
+            <div className="flex flex-col flex-1 ml-0 md:ml-16 pt-0 md:pt-20"> {/* Sesuaikan dengan padding layout */}
+                {/* Skeleton untuk Hero Section / Main Banner */}
+                <div className="w-full h-[250px] md:h-[350px] lg:h-[450px] bg-gray-200 dark:bg-gray-800 rounded-3xl shadow-lg mb-8">
+                    {/* Placeholder for inner elements of the banner */}
+                    <div className="flex flex-col justify-end h-full p-6">
+                        <div className="w-40 h-8 bg-gray-300 dark:bg-gray-700 rounded-md mb-2"></div>
+                        <div className="w-24 h-6 bg-gray-300 dark:bg-gray-700 rounded-md"></div>
+                    </div>
+                </div>
 
-    // Renders a skeleton mimicking dashboard summary cards
-    const renderDashboardSummary = () => (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full animate-fade-in-up duration-500">
-            {Array.from({ length: 3 }).map((_, i) => (
-                <Card key={i} className="p-6">
-                    <CardHeader className="p-0 pb-4">
-                        <CardTitle>
-                            <Skeleton className="h-6 w-3/4 mb-2" />
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <Skeleton className="h-10 w-1/2" />
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    );
+                {/* Skeleton untuk Thumbnail Navigasi (jika ada) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="w-full h-[120px] bg-gray-200 dark:bg-gray-800 rounded-xl shadow-md"></div>
+                    ))}
+                </div>
 
-    // Renders a skeleton mimicking a table or list
-    const renderTableList = () => (
-        <div className="space-y-4 w-full animate-fade-in-up duration-500">
-            <Skeleton className="h-8 w-1/3 mb-4" /> {/* Section Title Skeleton */}
-            <div className="space-y-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center space-x-4 p-2 rounded-md bg-card border">
-                        <Skeleton className="h-8 w-8 rounded-full" /> {/* Avatar/Icon Skeleton */}
-                        <div className="flex-1 space-y-2">
-                            <Skeleton className="h-4 w-3/4" />
-                            <Skeleton className="h-3 w-1/2" />
+                {/* Skeleton untuk Bagian Info Utama / Grid (misalnya About Section & Details) */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    {/* Kolom Kiri (Deskripsi) */}
+                    <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-8 h-80 flex flex-col gap-4">
+                        <div className="w-3/4 h-8 bg-gray-200 dark:bg-gray-700 rounded-md mb-4"></div>
+                        <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+                        <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+                        <div className="w-5/6 h-4 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+                        <div className="w-2/3 h-4 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+                        <div className="flex gap-4 mt-auto">
+                            <div className="w-24 h-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                            <div className="w-24 h-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
                         </div>
                     </div>
-                ))}
+
+                    {/* Kolom Kanan (Detail Minting) */}
+                    <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-8 h-80 flex flex-col items-center justify-center gap-4">
+                        <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full mb-4"></div>
+                        <div className="w-3/4 h-6 bg-gray-200 dark:bg-gray-700 rounded-md mb-2"></div>
+                        <div className="w-1/2 h-4 bg-gray-200 dark:bg-gray-700 rounded-md"></div>
+                        <div className="w-full h-12 bg-gray-200 dark:bg-gray-700 rounded-xl mt-auto"></div>
+                    </div>
+                </div>
+
+                {/* Skeleton untuk Grid NFT (jika ada) atau Tabel (jika ada) */}
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-8 h-[400px]">
+                    <div className="w-1/2 h-8 bg-gray-200 dark:bg-gray-700 rounded-md mb-6"></div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                        {Array.from({ length: 5 }).map((_, i) => ( // Tampilkan 5 kartu NFT skeleton
+                            <div key={i} className="bg-gray-100 dark:bg-gray-700 rounded-xl h-64 shadow-sm flex flex-col">
+                                <div className="w-full h-32 bg-gray-200 dark:bg-gray-600 rounded-t-xl"></div>
+                                <div className="p-3 flex flex-col gap-2">
+                                    <div className="w-3/4 h-4 bg-gray-200 dark:bg-gray-600 rounded-md"></div>
+                                    <div className="w-1/2 h-3 bg-gray-200 dark:bg-gray-600 rounded-md"></div>
+                                    <div className="w-full h-8 bg-gray-200 dark:bg-gray-600 rounded-lg mt-2"></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
-        </div>
-    );
-
-    // Renders a skeleton mimicking a block of text
-    const renderTextBlock = () => (
-        <div className="space-y-3 w-full max-w-lg animate-fade-in-up duration-500">
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-[90%]" />
-            <Skeleton className="h-4 w-[95%]" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-[80%]" />
-        </div>
-    );
-
-    // Renders a skeleton mimicking a chart area
-    const renderChart = () => (
-        <Card className="p-6 w-full aspect-video flex flex-col gap-4 animate-fade-in-up duration-500">
-            <Skeleton className="h-8 w-1/2" /> {/* Chart Title */}
-            <Skeleton className="flex-1 w-full" /> {/* Main Chart Area */}
-            <div className="flex justify-center gap-4">
-                <Skeleton className="h-4 w-1/5" />
-                <Skeleton className="h-4 w-1/5" />
-                <Skeleton className="h-4 w-1/5" />
-            </div>
-        </Card>
-    );
-
-    const renderSkeletonContent = () => {
-        switch (type) {
-            case 'dashboard-summary':
-                return renderDashboardSummary();
-            case 'table-list':
-                return renderTableList();
-            case 'text-block':
-                return renderTextBlock();
-            case 'chart':
-                return renderChart();
-            default:
-                return renderDashboardSummary();
-        }
-    };
-
-    return (
-        <div
-            className={cn(
-                "w-full h-full flex flex-col items-center justify-center",
-                className
-            )}
-            {...props}
-        >
-            {renderSkeletonContent()}
         </div>
     );
 }

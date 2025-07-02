@@ -1,45 +1,63 @@
-'use client';
+// app/error.tsx
+'use client'; // Error Boundaries harus Client Component
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { AlertCircle, Home } from 'lucide-react';
+import { AlertTriangle, Home, RotateCw } from 'lucide-react'; // Menggunakan AlertTriangle untuk error yang lebih umum
 import { Button } from '@/components/ui/button';
-// Custom Error Page for the Home Page
-export default function HomeErrorPage({
+
+// Halaman Error Global untuk aplikasi Next.js
+export default function GlobalErrorPage({
     error,
+    reset,
 }: {
     error: Error & { digest?: string };
-    reset: () => void;
+    reset: () => void; // Fungsi untuk mencoba mereset Error Boundary
 }) {
     useEffect(() => {
-        // Log the error to an error reporting service
-        console.error(error);
+        // Log the error to an error reporting service like Sentry, LogRocket, etc.
+        // For development, we'll log to console.
+        console.error('Unhandled Global Error:', error);
+        // Anda juga bisa mengirim error.digest ke layanan pelaporan error di sini
+        // jika Anda menggunakan Next.js App Router dengan error.digest.
     }, [error]);
 
-    // Render Custom Error Page for Home Page
     return (
-        <div className="bg-gray-800 px-4 py-10 text-gray-300 shadow-lg sm:px-6 lg:px-8">
-            <div className="text-center">
-                <AlertCircle className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                <h3 className="mb-4 text-3xl font-bold text-gray-100">
-                    Error Loading Home Page
-                </h3>
-                <p className="mb-8 text-xl text-gray-400">
-                    We are having trouble retrieving the Home page. This could likely be
-                    due to network issues.
-                    <br />
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-6 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 md:p-12 max-w-lg w-full flex flex-col items-center">
+                <AlertTriangle className="w-24 h-24 text-red-500 mb-6 animate-pulse" /> {/* Ikon error besar */}
+                <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-gray-900 dark:text-white">
+                    Oops! Something Went Wrong.
+                </h1>
+                <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 mb-8">
+                    We apologize, but an unexpected error occurred.
+                    Please try again or return to the homepage.
                 </p>
-                <div className="flex flex-col justify-center space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
+
+                {/* Display a technical error message in development for debugging */}
+                {process.env.NODE_ENV === 'development' && (
+                    <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 text-sm text-left mb-6 w-full max-h-48 overflow-auto">
+                        <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2">Error Details:</h4>
+                        <p className="text-red-600 dark:text-red-400 font-mono break-words">{error.message}</p>
+                        {error.digest && <p className="text-gray-600 dark:text-gray-400 mt-2">Digest: {error.digest}</p>}
+                    </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
                     <Button
-                        asChild
-                        variant="outline"
-                        className="inline-flex items-center rounded-md border border-gray-600 bg-gray-900 px-6 py-3 text-base font-medium text-gray-300 transition-colors duration-200 hover:bg-gray-800 hover:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-offset-2 focus:ring-offset-gray-900"
+                        onClick={() => reset()} // Fungsi `reset` untuk mencoba kembali
+                        className="py-3 px-6 text-lg font-semibold rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-md transition-all duration-200 flex items-center justify-center gap-2 transform hover:scale-105"
                     >
-                        <Link href="/">
-                            <Home className="mr-2 h-5 w-5" />
-                            Back to Dashboard
-                        </Link>
+                        <RotateCw className="w-5 h-5" /> Try Again
                     </Button>
+                    <Link href="/" passHref>
+                        <Button
+                            variant="outline"
+                            className="py-3 px-6 text-lg font-semibold rounded-full border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-md transition-all duration-200 flex items-center justify-center gap-2 transform hover:scale-105"
+                        >
+                            <Home className="w-5 h-5" /> Go Home
+                        </Button>
+                    </Link>
                 </div>
             </div>
         </div>

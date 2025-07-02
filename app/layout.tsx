@@ -5,6 +5,9 @@ import { headers } from 'next/headers' // added
 import './globals.css';
 import ContextProvider from '@/context'
 import { ToastProvider } from "@/context/ToastContext";
+import { McLaren } from "next/font/google";
+
+const mclaren = McLaren({ weight: "400", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Cryptea",
@@ -45,7 +48,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body>
+      <body className={`${mclaren.className}`}>
         <ContextProvider cookies={cookies}>
           <ToastProvider>
             {children}

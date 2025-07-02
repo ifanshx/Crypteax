@@ -75,10 +75,11 @@ export const ConnectButton = () => {
             ) : (
                 // Tampilan normal: ikon panah dan teks berdasarkan status koneksi
                 <>
-                    <ChevronDown className="mr-1 h-4 w-4" />
+
                     {isConnected && address
                         ? `Disconnect` // Teks tombol "Disconnect" jika sudah terhubung
                         : 'Connect Wallet'} {/* Teks tombol "Connect Wallet" jika belum terhubung */}
+                    <ChevronDown className="ml-1 h-4 w-4" />
                 </>
             )}
         </Button>

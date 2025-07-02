@@ -35,7 +35,7 @@ export default function NotFound() {
                         size="lg" // Ukuran tombol besar
                         className="rounded-full font-semibold text-lg px-8 py-4 shadow-md hover:scale-105 transition-transform duration-300 ease-out" // Tombol bulat, bayangan, efek hover
                     >
-                        <Link href="/" aria-label="Go back to homepage">
+                        <Link href="/home" aria-label="Go back to homepage">
                             Back to Home
                         </Link>
                     </Button>
