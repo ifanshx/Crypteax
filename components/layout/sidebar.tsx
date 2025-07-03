@@ -4,17 +4,17 @@ import { cn } from '@/lib/utils';
 
 export function Sidebar() {
     const navItems = [
-        { icon: Rocket, label: 'Rocket', href: '/home' },
-        { icon: Image, label: 'Image', href: '/collections' },
-        { icon: Repeat2, label: 'Repeat', href: '/stake' },
-        { icon: PartyPopper, label: 'Repeat', href: '/raffle' },
+        { icon: Rocket, label: 'Home', href: '/home' },
+        { icon: Image, label: 'Collections', href: '/collections' },
+        { icon: Repeat2, label: 'Stake', href: '/stake' },
+        { icon: PartyPopper, label: 'Raffle', href: '/raffle' },
 
     ];
 
     return (
         <aside className="fixed left-0 top-0 h-full w-16 bg-white border-r border-gray-200 flex flex-col items-center py-4 space-y-8 z-100">
             <div className="mb-8 mt-0"> {/* mt-2 untuk sedikit geser ke bawah */}
-                <Link href="#" className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#DAF4E3] text-[#2F855A] text-2xl font-bold">
+                <Link href="/" className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#DAF4E3] text-[#2F855A] text-2xl font-bold">
                     🌱
                 </Link>
             </div>

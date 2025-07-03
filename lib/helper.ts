@@ -1,3 +1,4 @@
+// lib/helper.ts
 const formatAddress = (address: string): string => {
   if (!address) return "";
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -74,4 +75,42 @@ function formatUnits(value: bigint, decimals: number) {
   }`;
 }
 
-export { formatAddress, toHexString, formatTime, formatUnits };
+/**
+ * Formats a number to a specified number of decimal places.
+ * @param value The number to format.
+ * @param minDecimals Minimum number of decimal places.
+ * @param maxDecimals Maximum number of decimal places.
+ * @returns Formatted string.
+ */
+const formatBalance = (
+  value: string | number,
+  minDecimals: number,
+  maxDecimals: number
+): string => {
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(num)) return "N/A";
+
+  const fixed = num.toFixed(maxDecimals);
+  const parts = fixed.split(".");
+  const integerPart = parts[0];
+  let decimalPart = parts.length > 1 ? parts[1] : "";
+
+  // Ensure minimum decimals
+  while (decimalPart.length < minDecimals) {
+    decimalPart += "0";
+  }
+
+  // Trim trailing zeros if more than minDecimals
+  if (decimalPart.length > minDecimals) {
+    decimalPart = decimalPart.replace(/0+$/, "");
+  }
+
+  // If after trimming, decimal part is empty, remove the dot.
+  if (decimalPart === "") {
+    return integerPart;
+  }
+
+  return `${integerPart}.${decimalPart}`;
+};
+
+export { formatAddress, toHexString, formatTime, formatUnits, formatBalance };

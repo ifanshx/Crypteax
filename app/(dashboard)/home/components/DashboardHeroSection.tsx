@@ -116,7 +116,7 @@ const ThumbnailNavigationItem: React.FC<{
     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent z-10"></div>
 
     {item.status === 'Coming Soon' && (
-      <div className="absolute inset-0 flex items-center justify-center z-20">
+      <div className="absolute brightness-75 bg-gradient-to-t from-black/50 via-black/50 to-transparent inset-0 flex items-center justify-center z-20">
         <span className="text-white font-semibold text-lg">Coming Soon</span>
       </div>
     )}

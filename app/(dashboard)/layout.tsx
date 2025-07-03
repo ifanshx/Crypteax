@@ -3,6 +3,7 @@ import React from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Topbar } from '@/components/layout/topbar';
 import '../globals.css';
+import GasPrice from '@/components/common/GasPrice';
 
 
 export const metadata = {
@@ -22,6 +23,9 @@ export default function DashboardLayout({
                 <Topbar />
                 <main className="flex-1 p-6 pt-20">
                     {children}
+                    <div className="fixed bottom-6 right-6 z-50 md:bottom-6 md:right-6">
+                        <GasPrice />
+                    </div>
                 </main>
             </div>
         </div>
