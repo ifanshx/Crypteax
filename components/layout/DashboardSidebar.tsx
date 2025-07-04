@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Rocket, Repeat2, Image, PartyPopper } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export function Sidebar() {
+export function DashboardSidebar() {
     const navItems = [
         { icon: Rocket, label: 'Home', href: '/home' },
         { icon: Image, label: 'Collections', href: '/collections' },

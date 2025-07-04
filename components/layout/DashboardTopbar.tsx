@@ -13,7 +13,7 @@ import { getAllCollections, Collection } from '@/lib/data/collections';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
-export function Topbar() {
+export function DashboardTopbar() {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [filteredCollections, setFilteredCollections] = useState<Collection[]>([]);
