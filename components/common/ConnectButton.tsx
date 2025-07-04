@@ -3,7 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAppKit, useAppKitAccount, useDisconnect } from '@reown/appkit/react';
-import { Loader2Icon, ChevronDown } from 'lucide-react';
+import { Loader2Icon, ChevronDown, LogOut } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'; // Import Tooltip components
 
 /**
  * @name ConnectButton
@@ -29,59 +32,100 @@ export const ConnectButton = () => {
     const isLoading = status === 'connecting' || status === 'reconnecting';
 
     /**
-     * @function handleClick
-     * @description Menangani aksi klik pada tombol.
-     * Jika sudah terhubung, panggil `disconnect()`.
-     * Jika belum terhubung, buka modal koneksi wallet.
+     * @function handleConnectClick
+     * @description Menangani aksi klik pada tombol "Connect Wallet".
      */
-    const handleClick = () => {
-        if (isConnected) {
-            disconnect();
-        } else {
-            open({ view: 'Connect', namespace: 'eip155' });
-        }
+    const handleConnectClick = () => {
+        open({ view: 'Connect', namespace: 'eip155' });
+    };
+
+    /**
+     * @function handleDisconnectClick
+     * @description Menangani aksi klik pada tombol "Disconnect".
+     */
+    const handleDisconnectClick = () => {
+        disconnect();
     };
 
     // --- Rendering Conditional Berdasarkan Mounted State ---
 
     // Selama SSR atau sebelum komponen dihidrasi di klien, tampilkan placeholder.
-    // Ini mencegah mismatch hidrasi karena hooks seperti useAppKitAccount() hanya tersedia di klien.
     if (!mounted) {
         return (
             <Button
                 variant="ghost"
                 size="sm"
-                disabled={false} // Selalu false di SSR untuk menghindari disabled={true}
+                disabled={false}
             >
                 <ChevronDown className="mr-1 h-4 w-4" />
-                Connect Wallet {/* Tampilan default atau placeholder di SSR */}
+                Connect Wallet
             </Button>
         );
     }
 
-    // Setelah mounted di sisi klien, render tombol interaktif.
+    // Setelah mounted di sisi klien, render tampilan yang dinamis.
     return (
-        <Button
-            onClick={handleClick}
-            variant="ghost" // Menggunakan variant ghost secara konsisten
-            size="sm"
-            disabled={isLoading} // Tombol dinonaktifkan saat loading
-        >
-            {isLoading ? (
-                // Tampilan saat loading: ikon spinner dan teks "Connecting..."
-                <>
-                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> Connecting…
-                </>
-            ) : (
-                // Tampilan normal: ikon panah dan teks berdasarkan status koneksi
-                <>
+        <div className="flex items-center space-x-2"> {/* Tambahkan div pembungkus untuk mengatur layout */}
+            <TooltipProvider> {/* Wrap with TooltipProvider */}
+                {isConnected && address ? (
+                    // Jika terhubung, tampilkan gambar profil dan tombol disconnect
+                    <>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Link href="/profile" passHref>
+                                    <div className="relative w-9 h-9 rounded-full overflow-hidden cursor-pointer border border-gray-300 hover:border-blue-500 transition-colors duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"> {/* Added hover/focus effects */}
+                                        <Image
+                                            src="/assets/avatars/user-placeholder.png" // Ganti dengan path gambar profil asli jika ada
+                                            alt="Profile"
+                                            layout="fill"
+                                            objectFit="cover"
+                                        />
+                                    </div>
+                                </Link>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>View Profile</p>
+                            </TooltipContent>
+                        </Tooltip>
 
-                    {isConnected && address
-                        ? `Disconnect` // Teks tombol "Disconnect" jika sudah terhubung
-                        : 'Connect Wallet'} {/* Teks tombol "Connect Wallet" jika belum terhubung */}
-                    <ChevronDown className="ml-1 h-4 w-4" />
-                </>
-            )}
-        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    onClick={handleDisconnectClick}
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label="Disconnect Wallet"
+                                    className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2" // Added hover/focus effects
+                                >
+                                    <LogOut className="h-5 w-5 text-gray-500 hover:text-red-500" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Disconnect Wallet</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </>
+                ) : (
+                    // Jika belum terhubung, tampilkan tombol "Connect Wallet"
+                    <Button
+                        onClick={handleConnectClick}
+                        variant="ghost"
+                        size="sm"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <>
+                                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" /> Connecting…
+                            </>
+                        ) : (
+                            <>
+                                Connect Wallet
+                                <ChevronDown className="ml-1 h-4 w-4" />
+                            </>
+                        )}
+                    </Button>
+                )}
+            </TooltipProvider>
+        </div>
     );
 };

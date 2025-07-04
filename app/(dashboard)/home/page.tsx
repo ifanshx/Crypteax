@@ -36,10 +36,6 @@ const trendingCollections = [
     },
 ];
 
-export const metadata = {
-    title: 'Dashboard - Home',
-    description: 'Halaman Beranda Dashboard NFT.',
-};
 
 export default function HomePage() {
     // Ambil data dari sumber tunggal
