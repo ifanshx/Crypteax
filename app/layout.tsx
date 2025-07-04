@@ -6,6 +6,7 @@ import './globals.css';
 import ContextProvider from '@/context'
 import { ToastProvider } from "@/context/ToastContext";
 import { McLaren } from "next/font/google";
+import GasPrice from "@/components/common/GasPrice";
 
 const mclaren = McLaren({ weight: "400", subsets: ["latin"] });
 
@@ -52,6 +53,9 @@ export default async function RootLayout({
         <ContextProvider cookies={cookies}>
           <ToastProvider>
             {children}
+            <div className="fixed bottom-6 right-6 z-50 md:bottom-6 md:right-6 ">
+              <GasPrice />
+            </div>
           </ToastProvider>
         </ContextProvider>
       </body>

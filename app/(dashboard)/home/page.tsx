@@ -42,7 +42,7 @@ export default function HomePage() {
     const heroCarouselItems: Collection[] = getAllCollections();
 
     return (
-        <div className="flex flex-col gap-6 p-6">
+        <div className="flex flex-col ">
             <DashboardHeroSection items={heroCarouselItems} />
             <TrendingCollectionTable collections={trendingCollections} />
         </div>
