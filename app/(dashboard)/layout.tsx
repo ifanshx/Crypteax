@@ -15,11 +15,11 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        // Mengembalikan div pembungkus utama dengan styling flex dan background
         <div className=" min-h-screen bg-gray-50">
-            <DashboardSidebar />
-            <div className="flex flex-col flex-1 ml-16">
-                <DashboardTopbar />
+            <DashboardSidebar /> {/* Ini adalah sidebar desktop */}
+            {/* Wrapper untuk konten utama, dengan margin yang responsif */}
+            <div className="flex flex-col flex-1 ml-0 md:ml-16">
+                <DashboardTopbar /> {/* Topbar yang sekarang berisi trigger mobile sidebar */}
                 <main className="flex-1 p-6 pt-20">
                     {children}
                 </main>

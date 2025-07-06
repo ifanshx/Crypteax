@@ -1,3 +1,4 @@
+// components/layout/DashboardTopbar.tsx
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -12,6 +13,7 @@ import {
 import { getAllCollections, Collection } from '@/lib/data/collections';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { MobileSheetSidebar } from './MobileSheetSidebar'; // Import komponen baru
 
 export function DashboardTopbar() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -24,9 +26,7 @@ export function DashboardTopbar() {
     const router = useRouter();
     const allCollections = React.useMemo(() => getAllCollections(), []);
 
-    // Efek untuk melakukan debouncing pada searchTerm dan mengelola status loading
     useEffect(() => {
-        // Atur isSearching menjadi true jika ada input dan belum ter-debounce
         if (searchTerm.length > 0 && searchTerm !== debouncedSearchTerm) {
             setIsSearching(true);
         } else {
@@ -35,15 +35,13 @@ export function DashboardTopbar() {
 
         const handler = setTimeout(() => {
             setDebouncedSearchTerm(searchTerm);
-        }, 300); // Debounce delay 300ms
+        }, 300);
 
         return () => {
             clearTimeout(handler);
-            // setIsSearching(false); // Tidak perlu di sini, karena sudah ditangani di bawah
         };
     }, [searchTerm]);
 
-    // Efek untuk memfilter koleksi berdasarkan debouncedSearchTerm
     useEffect(() => {
         if (debouncedSearchTerm.length > 0) {
             const results = allCollections.filter(
@@ -57,7 +55,7 @@ export function DashboardTopbar() {
             setFilteredCollections([]);
             setIsPopoverOpen(false);
         }
-        setIsSearching(false); // Pastikan isSearching false setelah hasil diproses
+        setIsSearching(false);
     }, [debouncedSearchTerm, allCollections]);
 
     const handleSelectCollection = useCallback((collectionId: string) => {
@@ -67,8 +65,11 @@ export function DashboardTopbar() {
     }, [router]);
 
     return (
-        <header className="fixed left-16 top-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shadow-sm">
-            <div className="relative flex items-center flex-grow max-w-sm ml-4">
+        <header className="fixed left-0 md:left-16 top-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shadow-sm">
+            {/* Mobile Sidebar Trigger - hanya terlihat di mobile */}
+            <MobileSheetSidebar />
+
+            <div className="relative flex items-center flex-grow max-w-sm mr-4">
                 <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                     <PopoverTrigger asChild>
                         <div className="relative w-full">
@@ -96,13 +97,13 @@ export function DashboardTopbar() {
                         }}
                     >
                         {filteredCollections.length > 0 ? (
-                            <div role="listbox" className="flex flex-col"> {/* Tambahkan role="listbox" */}
+                            <div role="listbox" className="flex flex-col">
                                 {filteredCollections.map((collection) => (
                                     <button
                                         key={collection.id}
                                         onClick={() => handleSelectCollection(collection.id)}
                                         className="flex items-center gap-2 p-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer w-full text-left"
-                                        role="option" // Tambahkan role="option"
+                                        role="option"
                                         aria-selected="false"
                                     >
                                         <Image
@@ -117,7 +118,7 @@ export function DashboardTopbar() {
                                 ))}
                             </div>
                         ) : (
-                            <div className="p-4 text-center text-sm text-muted-foreground"> {/* Ubah jadi div untuk styling lebih baik */}
+                            <div className="p-4 text-center text-sm text-muted-foreground">
                                 {isSearching ? (
                                     <span className="flex items-center justify-center gap-2">
                                         <Loader2Icon className="h-4 w-4 animate-spin" /> Searching...
@@ -131,9 +132,9 @@ export function DashboardTopbar() {
                 </Popover>
             </div>
 
-            <div className="flex items-center space-x-5 mr-4">
-                <span className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200 cursor-default">0.00 CTEA</span>
-                <span className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors duration-200 cursor-default">0.00 TEA</span>
+            <div className="flex items-center space-x-3 sm:space-x-4 mr-2 sm:mr-4">
+                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:block cursor-default">0.00 CTEA</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:block cursor-default">0.00 TEA</span>
                 <ConnectButton />
             </div>
         </header>

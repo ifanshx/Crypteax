@@ -27,7 +27,7 @@ interface DashboardHeroSectionProps {
 
 const MainBannerSlide: React.FC<{ item: CarouselItemData }> = ({ item }) => (
   <Link href={`/collections/${item.id}`} passHref>
-    <div className="relative w-full h-[300px] md:h-[400px] lg:h-[500px] overflow-hidden cursor-pointer group">
+    <div className="relative w-full h-[250px] md:h-[350px] lg:h-[450px] overflow-hidden cursor-pointer group">
       <Image
         src={item.bannerUrl}
         alt={item.name}

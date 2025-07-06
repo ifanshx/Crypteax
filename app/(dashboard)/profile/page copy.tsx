@@ -5,7 +5,6 @@ import { useSession } from 'next-auth/react';
 
 import {
     CardContent,
-    CardDescription,
     CardHeader,
     CardTitle,
     Card
@@ -13,8 +12,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator'; // Import Separator
 
 import { formatAddress } from '@/lib/helper';
 
@@ -25,6 +24,34 @@ import { useToast } from '@/context/ToastContext';
 export default function ProfilePage() {
     const { data: session, status } = useSession();
     const toast = useToast();
+
+    // Pastikan komponen Separator sudah tersedia. Jika belum, kamu bisa menambahkannya ke UI library-mu.
+    // Contoh implementasi sederhana jika belum ada:
+    // components/ui/separator.tsx
+    // import * as React from "react"
+    // import * as SeparatorPrimitive from "@radix-ui/react-separator"
+    // import { cn } from "@/lib/utils" // Asumsi ada utilitas cn
+
+    // const Separator = React.forwardRef<
+    //   React.ElementRef<typeof SeparatorPrimitive.Root>,
+    //   React.ComponentPropsWithoutRef<typeof SeparatorPrimitive.Root>
+    // >(
+    //   ({ className, orientation = "horizontal", decorative = true, ...props }, ref) => (
+    //     <SeparatorPrimitive.Root
+    //       ref={ref}
+    //       decorative={decorative}
+    //       orientation={orientation}
+    //       className={cn(
+    //         "shrink-0 bg-border",
+    //         orientation === "horizontal" ? "h-[1px] w-full" : "h-full w-[1px]",
+    //         className
+    //       )}
+    //       {...props}
+    //     />
+    //   )
+    // )
+    // Separator.displayName = SeparatorPrimitive.Root.displayName
+
 
     if (status === "loading") {
         return (
@@ -74,10 +101,22 @@ export default function ProfilePage() {
         });
     };
 
+    const handleCopyReferralCode = () => {
+        if (user.referralCode) {
+            navigator.clipboard.writeText(user.referralCode);
+            toast.add({
+                title: "Referral Code Copied!",
+                description: "Your referral code has been copied to clipboard.",
+                type: "success",
+            });
+        }
+    };
+
     return (
-        <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
+        <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8 max-w-4xl">
             <Card className="p-0 border-none shadow-none bg-transparent">
-                <CardHeader className="flex flex-col sm:flex-row items-center gap-6 pb-8 border-b-2 border-gray-100 dark:border-gray-800">
+                <CardHeader className="flex flex-col sm:flex-row items-center sm:items-start gap-6 pb-8">
+                    {/* Avatar Section */}
                     <div className="flex-shrink-0 relative">
                         <Avatar className="size-28 sm:size-32 border-4 border-primary/20 shadow-md group-hover:scale-105 transition-transform duration-300">
                             {user.image ? (
@@ -97,17 +136,21 @@ export default function ProfilePage() {
                             <Pencil className="h-4 w-4" />
                         </Button>
                     </div>
-                    <div className="text-center sm:text-left flex-grow">
-                        <CardTitle className="text-3xl lg:text-4xl font-extrabold text-foreground mb-2">
+
+                    {/* User Info Section */}
+                    <div className="text-center sm:text-left flex-grow space-y-2 sm:space-y-3">
+                        <CardTitle className="text-3xl lg:text-4xl font-extrabold text-foreground">
                             {user.username || "Guest User"}
                         </CardTitle>
-                        <CardDescription className="text-muted-foreground text-lg flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2 mb-2">
-                            Wallet Address:
-                            <span className="font-mono text-foreground bg-muted/50 px-2 py-0.5 rounded-md break-all">
-                                {formatAddress(user.walletAddress)}
-                            </span>
-                            <TooltipProvider>
-                                <div className="flex items-center gap-1 mt-2 sm:mt-0">
+
+                        {/* Wallet Address */}
+                        <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2">
+                            <span className="text-muted-foreground text-lg">Wallet:</span>
+                            <div className="flex items-center gap-1 bg-muted/50 px-3 py-1 rounded-md">
+                                <span className="font-mono text-foreground break-all text-sm sm:text-base">
+                                    {formatAddress(user.walletAddress)}
+                                </span>
+                                <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <Button
@@ -140,17 +183,19 @@ export default function ProfilePage() {
                                             <p>Show QR Code</p>
                                         </TooltipContent>
                                     </Tooltip>
-                                </div>
-                            </TooltipProvider>
-                        </CardDescription>
+                                </TooltipProvider>
+                            </div>
+                        </div>
+
                         {/* Referral Info */}
                         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-3">
                             <Badge className="bg-primary text-primary-foreground text-sm py-1 px-3">
                                 <Coins className="h-4 w-4 text-orange-300 mr-1" />
-                                Points: <span className="ml-1 font-bold">1250</span> {/* Contoh data statis */}
+                                Referral Points: <span className="ml-1 font-bold">1250</span> {/* Contoh data statis */}
                             </Badge>
                             <Badge
                                 className="bg-secondary text-secondary-foreground text-sm py-1 px-3 cursor-pointer hover:bg-secondary/80 transition-colors duration-200"
+                                onClick={handleCopyReferralCode}
                             >
                                 <p className="font-medium mr-1">Your Code:</p>
                                 <p className="text-base font-bold text-green-600 dark:text-green-400 tracking-tight">{user.referralCode || 'N/A'}</p>
@@ -158,21 +203,24 @@ export default function ProfilePage() {
                             </Badge>
                         </div>
                     </div>
-                    <Button variant="outline" className="flex items-center gap-2 px-6 py-2 md:px-8 md:py-3 md:text-base mt-4 sm:mt-0 hover:bg-accent hover:text-accent-foreground">
-                        <Pencil className="h-4 w-4" /> Edit Profile
-                    </Button>
+
+                    {/* Edit Profile Button */}
+                    <div className="flex-shrink-0 mt-4 sm:mt-0">
+                        <Button variant="default" className="flex items-center gap-2 px-6 py-2 md:px-8 md:py-3 md:text-base">
+                            <Pencil className="h-4 w-4" /> Edit Profile
+                        </Button>
+                    </div>
                 </CardHeader>
 
-                <CardContent className="pt-8">
+                <Separator className="my-8" /> {/* Menambahkan Separator */}
 
-
+                <CardContent className="pt-0">
                     <h3 className="text-2xl font-semibold text-foreground mb-4">My Collections & NFTs</h3>
                     <div className="bg-card p-6 py-10 rounded-lg shadow-md border border-border text-center text-muted-foreground flex flex-col items-center justify-center">
                         <GalleryHorizontal className="h-10 w-10 text-muted-foreground mb-4" />
                         <p className="text-base mb-2">Your owned collections and NFTs will appear here soon!</p>
                         <p className="text-sm">Stay tuned for exciting updates.</p>
                     </div>
-
                 </CardContent>
             </Card>
         </div>
