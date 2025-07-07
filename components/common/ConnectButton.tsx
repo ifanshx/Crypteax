@@ -4,9 +4,10 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAppKit, useAppKitAccount, useDisconnect } from '@reown/appkit/react';
 import { Loader2Icon, ChevronDown, LogOut } from 'lucide-react';
-import Image from 'next/image';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'; // Import Tooltip components
+import { useSession } from 'next-auth/react';
 
 /**
  * @name ConnectButton
@@ -18,6 +19,9 @@ export const ConnectButton = () => {
     const { open } = useAppKit();
     const { address, isConnected, status } = useAppKitAccount();
     const { disconnect } = useDisconnect();
+    const { data: session } = useSession();
+
+    const user = session?.user;
 
     // State untuk melacak apakah komponen sudah mounted di sisi klien (untuk hidrasi)
     const [mounted, setMounted] = useState(false);
@@ -73,14 +77,15 @@ export const ConnectButton = () => {
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Link href="/profile" passHref>
-                                    <div className="relative w-9 h-9 rounded-full overflow-hidden cursor-pointer border border-gray-300 hover:border-blue-500 transition-colors duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"> {/* Added hover/focus effects */}
-                                        <Image
-                                            src="/assets/avatars/user-placeholder.png" // Ganti dengan path gambar profil asli jika ada
-                                            alt="Profile"
-                                            layout="fill"
-                                            objectFit="cover"
-                                        />
-                                    </div>
+                                    <Avatar className="relative w-9 h-9 rounded-full overflow-hidden cursor-pointer border border-gray-300 hover:border-[#2F855A] transition-colors duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#2F855A] focus:ring-offset-2">
+                                        {user && user.image ? (
+                                            <AvatarImage src={user.image} alt={user.username || "User"} />
+                                        ) : (
+                                            <AvatarFallback className="text-xl font-bold bg-[#DAF4E3] text-[#2F855A]">
+                                                {user && user.username ? user.username.charAt(0).toUpperCase() : 'U'}
+                                            </AvatarFallback>
+                                        )}
+                                    </Avatar>
                                 </Link>
                             </TooltipTrigger>
                             <TooltipContent>

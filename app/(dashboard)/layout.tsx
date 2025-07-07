@@ -16,10 +16,9 @@ export default function DashboardLayout({
 }) {
     return (
         <div className=" min-h-screen bg-gray-50">
-            <DashboardSidebar /> {/* Ini adalah sidebar desktop */}
-            {/* Wrapper untuk konten utama, dengan margin yang responsif */}
+            <DashboardSidebar />
             <div className="flex flex-col flex-1 ml-0 md:ml-16">
-                <DashboardTopbar /> {/* Topbar yang sekarang berisi trigger mobile sidebar */}
+                <DashboardTopbar />
                 <main className="flex-1 p-6 pt-20">
                     {children}
                 </main>

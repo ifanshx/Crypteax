@@ -1,12 +1,9 @@
-"use client";
-import React from 'react';
+import React from 'react'
 
 const StakePage = () => {
     return (
-        <div>
-            StakePage
-        </div>
-    );
-};
+        <div>StakePage</div>
+    )
+}
 
-export default StakePage;
+export default StakePage
