@@ -33,9 +33,9 @@ const CollectionsPage = () => {
     }, [allCollections, searchTerm, filterStatus]);
 
     return (
-        <div className="flex flex-col gap-10">
+        <div className="flex flex-col gap-5">
             {/* Search Bar */}
-            <div className="relative max-w-2xl mx-auto w-full mb-4"> {/* `max-w-2xl` dan `mx-auto` untuk responsif di tengah */}
+            <div className="relative max-w-2xl mx-auto w-full mb-1"> {/* `max-w-2xl` dan `mx-auto` untuk responsif di tengah */}
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
                 <Input
                     type="text"
@@ -47,7 +47,7 @@ const CollectionsPage = () => {
             </div>
 
             {/* Filter Buttons */}
-            <div className="flex flex-wrap justify-center gap-3 md:gap-4 mb-6"> {/* `flex-wrap` dan `justify-center` untuk tombol responsif */}
+            <div className="flex flex-wrap justify-center gap-3 md:gap-4 mb-1"> {/* `flex-wrap` dan `justify-center` untuk tombol responsif */}
                 <Button
                     variant={filterStatus === 'All' ? 'default' : 'outline'}
                     className={filterStatus === 'All' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'text-gray-700 border-gray-300 hover:bg-gray-100'}
