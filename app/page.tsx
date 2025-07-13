@@ -3,6 +3,7 @@ import React from 'react';
 import Link from 'next/link'; // Import Link dari Next.js untuk navigasi
 import { Button } from '@/components/ui/button'; // Asumsi Anda punya komponen Button dari shadcn/ui
 import Image from 'next/image';
+import { FooterHome } from '@/components/common/FooterHome';
 
 export const metadata = {
     title: 'Welcome - Cryptea',
@@ -49,6 +50,7 @@ export default function Home() {
                     </Button>
                 </Link>
             </div>
+            <FooterHome />
         </div>
     );
 }

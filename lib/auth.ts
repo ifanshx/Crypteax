@@ -1,4 +1,4 @@
-// lib/auth.ts
+// ifanshx/crypteax/Crypteax-7f72947c8ea77351e773bc6f0bfb818784a7600e/lib/auth.ts
 import NextAuth from "next-auth";
 import type { NextAuthOptions, DefaultSession } from "next-auth";
 import credentialsProvider from "next-auth/providers/credentials";
@@ -8,11 +8,10 @@ import {
   getChainIdFromMessage,
   getAddressFromMessage,
 } from "@reown/appkit-siwe";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma"; //
 import { UserRole as PrismaUserRole } from "@prisma/client";
 
 // --- Deklarasi Tipe untuk NextAuth ---
-// (Tidak ada perubahan pada bagian ini, tetap seperti yang Anda definisikan)
 declare module "next-auth" {
   interface Session extends SIWESession {
     user: {
@@ -86,7 +85,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const { message, signature } = credentials; // Ambil referralCode
+        const { message, signature } = credentials;
         const address = getAddressFromMessage(message);
         const chainId = getChainIdFromMessage(message);
 
@@ -106,7 +105,7 @@ export const authOptions: NextAuthOptions = {
         try {
           // 1. Coba cari user yang sudah ada berdasarkan wallet address
           let user = await prisma.user.findUnique({
-            where: { user_address: address },
+            where: { address: address }, // Perubahan di sini
           });
 
           // 2. Jika user belum ada, buat user baru
@@ -114,21 +113,21 @@ export const authOptions: NextAuthOptions = {
             try {
               user = await prisma.user.create({
                 data: {
-                  user_username: `user_${Math.random()
+                  username: `user_${Math.random() // Perubahan di sini
                     .toString(36)
                     .substring(2, 8)
                     .toUpperCase()}`,
-                  user_role: PrismaUserRole.USER,
-                  user_address: address,
-                  user_points: 0,
-                  user_referralCode: Math.random() // Generate referral code unik
+                  role: PrismaUserRole.USER, // Perubahan di sini
+                  address: address, // Perubahan di sini
+                  points: 0, // Perubahan di sini
+                  referralCode: Math.random() // Generate referral code unik
                     .toString(36)
                     .substring(2, 10)
                     .toUpperCase(),
-                  user_isBlocked: false,
+                  isBlocked: false, // Perubahan di sini
                   // TODO: Anda mungkin ingin menambahkan logika untuk menggunakan referralCode
                   // yang diterima di `credentials` di sini, misalnya:
-                  // user_referrerId: referralCode ? await getUserIdFromReferralCode(referralCode) : null,
+                  // referredById: referralCode ? await getUserIdFromReferralCode(referralCode) : null,
                 },
               });
             } catch (createError) {
@@ -144,7 +143,7 @@ export const authOptions: NextAuthOptions = {
                 );
                 // Coba ambil user lagi jika terjadi race condition
                 user = await prisma.user.findUnique({
-                  where: { user_address: address },
+                  where: { address: address }, // Perubahan di sini
                 });
                 if (!user) {
                   // Jika masih tidak ditemukan (sangat jarang), log error dan return null
@@ -170,13 +169,13 @@ export const authOptions: NextAuthOptions = {
 
           // Mengembalikan objek User yang sesuai dengan deklarasi NextAuth
           return {
-            id: user.user_id,
-            walletAddress: user.user_address,
-            username: user.user_username,
-            image: user.user_image,
-            role: user.user_role,
-            points: user.user_points,
-            referralCode: user.user_referralCode,
+            id: user.id, // Perubahan di sini
+            walletAddress: user.address, // Perubahan di sini
+            username: user.username,
+            image: user.image,
+            role: user.role,
+            points: user.points,
+            referralCode: user.referralCode,
           };
         } catch (error) {
           // Tangani error umum yang mungkin terjadi selama proses authorize (selain P2002 yang sudah ditangani)

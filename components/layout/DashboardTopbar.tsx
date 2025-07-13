@@ -13,7 +13,7 @@ import {
 import { getAllCollections, Collection } from '@/lib/data/collections';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { MobileSheetSidebar } from './MobileSheetSidebar'; // Import komponen baru
+import { MobileSheetSidebar } from './MobileSheetSidebar';
 
 export function DashboardTopbar() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -66,7 +66,6 @@ export function DashboardTopbar() {
 
     return (
         <header className="fixed left-0 md:left-16 top-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50 shadow-sm">
-            {/* Mobile Sidebar Trigger - hanya terlihat di mobile */}
             <MobileSheetSidebar />
 
             <div className="relative flex items-center flex-grow max-w-sm mr-4">

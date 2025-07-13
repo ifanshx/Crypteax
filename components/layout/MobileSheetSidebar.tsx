@@ -1,5 +1,5 @@
 // components/layout/MobileSheetSidebar.tsx
-'use client'; // Tambahkan baris ini
+'use client';
 
 import Link from 'next/link';
 import { Rocket, Repeat2, Image, PartyPopper, Menu, UserCog } from 'lucide-react';
@@ -15,7 +15,7 @@ import {
 import { useSession } from 'next-auth/react';
 
 export function MobileSheetSidebar() {
-    const { data: session } = useSession(); // Get the session
+    const { data: session } = useSession();
 
     const navItems = [
         { icon: Rocket, label: 'Home', href: '/home' },
@@ -33,7 +33,7 @@ export function MobileSheetSidebar() {
                 </button>
             </SheetTrigger>
 
-            <SheetContent side="left" className="w-64 p-0 bg-white border-r-0 flex flex-col"> {/* Tambahkan flex flex-col */}
+            <SheetContent side="left" className="w-64 p-0 bg-white border-r-0 flex flex-col">
                 <SheetHeader className="sr-only">
                     <SheetTitle>Main Navigation</SheetTitle>
                     <SheetDescription>
@@ -41,7 +41,7 @@ export function MobileSheetSidebar() {
                     </SheetDescription>
                 </SheetHeader>
 
-                <div className="flex flex-col items-center py-4 space-y-8 flex-grow"> {/* flex-grow agar konten atas memenuhi ruang yang tersedia */}
+                <div className="flex flex-col items-center py-4 space-y-8 flex-grow">
                     <div className="mb-8 mt-0 flex items-center gap-3">
                         <Link href="/" className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#DAF4E3] text-[#2F855A] text-2xl font-bold">
                             🌱
@@ -68,7 +68,7 @@ export function MobileSheetSidebar() {
 
                 {/* Bagian bawah untuk item Admin */}
                 {session?.user?.role === 'ADMIN' && (
-                    <nav className="flex flex-col space-y-6 w-full px-4 mb-4"> {/* mb-4 untuk sedikit padding dari bawah */}
+                    <nav className="flex flex-col space-y-6 w-full px-4 mb-4">
                         <Link
                             href="/admin"
                             className={cn(
