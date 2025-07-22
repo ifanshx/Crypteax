@@ -100,7 +100,6 @@ model User {
   referredBy             User?             @relation("UserReferrals", fields: [referredById], references: [id])
   referredUsers          User[]            @relation("UserReferrals")
   points                 Int               @default(0) @map("user_points")
-  rewardWalletAddress    String?           @map("user_rewardWalletAddress")
 
   stakedNFTs             Staked[]
   activities             Activity[]

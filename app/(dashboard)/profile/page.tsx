@@ -1,7 +1,13 @@
 // app/(dashboard)/profile/page.tsx
-"use client";
-import React, { useState, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
+"use client"; // Client Component karena menggunakan hooks React dan interaksi UI
+
+import React, { useState, useCallback, useEffect } from 'react';
+import { useSession } from 'next-auth/react'; // Menggunakan useSession dari NextAuth.js untuk sesi
+import { useRouter } from 'next/navigation'; // Import useRouter untuk router.refresh()
+
+// Import Server Actions yang telah Anda buat
+// Pastikan path ini sesuai dengan lokasi Server Actions Anda
+import { updateUsername, updateProfileImage } from '@/lib/action/user';
 
 import {
     CardHeader,
@@ -35,36 +41,76 @@ import {
     Copy,
     Coins,
     GalleryHorizontal,
-    Wallet, // Menambahkan ikon Wallet
+    Wallet,
+    Image as ImageIcon,
 } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
-import Link from 'next/link'; // Import Link
+import Link from 'next/link';
+import Image from 'next/image';
+
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 export default function ProfilePage() {
-    const { data: session, status } = useSession();
+    // Menggunakan `update` dari useSession untuk memicu re-fetch sesi
+    const { data: session, status, update } = useSession();
     const toast = useToast();
     const user = session?.user;
+    const router = useRouter(); // Inisialisasi useRouter untuk me-refresh rute
 
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    // Menggunakan user.username dari sesi sebagai nilai awal, pastikan tidak null
+    // State untuk Dialog Edit Username
+    const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false);
     const [newUsername, setNewUsername] = useState(user?.username || '');
-    const [isSaving, setIsSaving] = useState(false);
+    const [isSavingUsername, setIsSavingUsername] = useState(false);
 
+    // State untuk Dialog Edit Image
+    const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+    // Mengatur default image saat ini atau '/assets/avatars/avatar.png' jika kosong
+    const [newImageUrl, setNewImageUrl] = useState(user?.image || '/assets/avatars/avatar.png');
+    const [isSavingImage, setIsSavingImage] = useState(false);
+
+
+
+    // Daftar gambar avatar yang tersedia
+    const availableAvatars = [
+        '/assets/avatars/avatar.png',
+        '/assets/avatars/avatar2.png',
+        '/assets/avatars/avatar3.png',
+    ];
+
+    // Effect untuk sinkronisasi state input dialog dengan sesi user saat dialog dibuka
+    // Ini penting agar dialog selalu menampilkan nilai sesi terbaru
+    useEffect(() => {
+        if (isUsernameDialogOpen) {
+            setNewUsername(user?.username || '');
+        }
+    }, [isUsernameDialogOpen, user?.username]);
+
+    useEffect(() => {
+        if (isImageDialogOpen) {
+            setNewImageUrl(user?.image || '/assets/avatars/avatar.png');
+        }
+    }, [isImageDialogOpen, user?.image]);
+
+
+    // Fungsi untuk menyalin ke clipboard dengan feedback toast
     const copyToClipboard = (text: string, title: string, desc: string) => {
         navigator.clipboard.writeText(text);
         toast.add({ title, description: desc, type: 'success' });
     };
 
+    // Handler untuk menyalin alamat dompet utama
     const handleCopyAddress = () => {
         if (user?.walletAddress) {
             copyToClipboard(
                 user.walletAddress,
-                'Address Disalin!',
+                'Alamat Disalin!',
                 'Alamat dompet Anda berhasil disalin.'
             );
         }
     };
 
+    // Handler untuk menyalin link referral
     const handleCopyReferral = useCallback(() => {
         const code = user?.referralCode;
         if (code) {
@@ -75,33 +121,78 @@ export default function ProfilePage() {
                 `Link referral dengan kode ${code} berhasil disalin.`
             );
         }
-    }, [user?.referralCode, copyToClipboard]); // Tambahkan copyToClipboard sebagai dependency
+    }, [user?.referralCode, toast]); // Menambahkan toast sebagai dependency
 
-    const handleSave = async () => {
-        setIsSaving(true);
+
+    // Handler untuk menyimpan username yang diupdate
+    const handleSaveUsername = async () => {
+        setIsSavingUsername(true);
+        const formData = new FormData();
+        formData.append('username', newUsername);
+
         try {
-            const res = await fetch('/api/user/update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: newUsername }),
-            });
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.message || 'Update failed');
+            const result = await updateUsername(formData); // Memanggil Server Action
+
+            if (result.success) {
+                toast.add({ title: 'Username Diperbarui!', description: result.message, type: 'success' });
+                setIsUsernameDialogOpen(false);
+                await update(); // Memperbarui sesi di client-side
+                router.refresh(); // Memaksa refresh data halaman dari server untuk memastikan UI terbaru
+            } else {
+                toast.add({ title: 'Gagal Memperbarui Username', description: result.message, type: 'error' });
             }
-            toast.add({ title: 'Username Diperbarui!', description: 'Nama pengguna Anda berhasil diubah.', type: 'success' });
-            setIsDialogOpen(false);
-            // Refresh session jika username berubah, agar UI diperbarui
-            // Tidak langsung memanggil update, biar next-auth yang menangani setelah sukses
-            // window.location.reload(); // Mungkin terlalu agresif, Next-Auth harusnya revalidate sendiri
         } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Terjadi kesalahan yang tidak diketahui.';
+            let msg = 'Terjadi kesalahan yang tidak diketahui.';
+            if (err instanceof Error) {
+                if (err.message === 'UNAUTHORIZED') {
+                    msg = 'Anda tidak terautentikasi atau sesi Anda telah berakhir. Silakan login kembali.';
+                } else {
+                    msg = err.message;
+                }
+            }
+            console.error("Error in handleSaveUsername (client-side):", err);
             toast.add({ title: 'Gagal Memperbarui Username', description: msg, type: 'error' });
         } finally {
-            setIsSaving(false);
+            setIsSavingUsername(false);
         }
     };
 
+    // Handler untuk menyimpan gambar profil yang diupdate
+    const handleSaveProfileImage = async () => {
+        setIsSavingImage(true);
+        const formData = new FormData();
+        formData.append('imageUrl', newImageUrl); // Mengirim URL gambar yang dipilih
+
+        try {
+            const result = await updateProfileImage(formData); // Memanggil Server Action
+
+            if (result.success) {
+                toast.add({ title: 'Foto Profil Diperbarui!', description: result.message, type: 'success' });
+                setIsImageDialogOpen(false);
+                await update(); // Memperbarui sesi di client-side
+                router.refresh(); // Memaksa refresh data halaman dari server untuk memastikan UI terbaru
+            } else {
+                toast.add({ title: 'Gagal Memperbarui Foto Profil', description: result.message, type: 'error' });
+            }
+        } catch (err) {
+            let msg = 'Terjadi kesalahan yang tidak diketahui.';
+            if (err instanceof Error) {
+                if (err.message === 'UNAUTHORIZED') {
+                    msg = 'Anda tidak terautentikasi atau sesi Anda telah berakhir. Silakan login kembali.';
+                } else {
+                    msg = err.message;
+                }
+            }
+            console.error("Error in handleSaveProfileImage (client-side):", err);
+            toast.add({ title: 'Gagal Memperbarui Foto Profil', description: msg, type: 'error' });
+        } finally {
+            setIsSavingImage(false);
+        }
+    };
+
+
+
+    // Tampilan Loading saat sesi dimuat
     if (status === 'loading') {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 animate-pulse">
@@ -113,6 +204,7 @@ export default function ProfilePage() {
         );
     }
 
+    // Tampilan jika pengguna belum terautentikasi atau sesi tidak ada
     if (status === 'unauthenticated' || !user) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 px-4 text-center">
@@ -123,8 +215,6 @@ export default function ProfilePage() {
                 <p className="text-lg text-muted-foreground mb-8">
                     Silakan hubungkan dompet Anda untuk melihat profil.
                 </p>
-                {/* Anda bisa menambahkan tombol untuk langsung menghubungkan dompet di sini */}
-                {/* <Button onClick={() => signIn()} className="py-3 px-6 text-lg">Hubungkan Dompet</Button> */}
                 <Link href="/" passHref>
                     <Button variant="outline" className="py-3 px-6 text-lg">
                         Kembali ke Beranda
@@ -134,31 +224,82 @@ export default function ProfilePage() {
         );
     }
 
+    // Tampilan Profil Utama
     return (
         <div className="container mx-auto min-h-screen">
-            {/* Header Profil */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8">
                 <CardHeader className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8 pb-6 border-b border-gray-200 dark:border-gray-700">
-                    <Avatar className="w-28 h-28 sm:w-32 sm:h-32 border-4 border-primary/30 shadow-lg transform transition-all duration-300 hover:scale-105">
-                        {user.image ? (
-                            <AvatarImage src={user.image} alt={user.username || 'Pengguna'} />
-                        ) : (
-                            <AvatarFallback className="bg-green-100 text-green-700 text-4xl font-bold">
-                                {user.username?.charAt(0).toUpperCase() || 'U'}
-                            </AvatarFallback>
-                        )}
-                    </Avatar>
+                    <div className="relative">
+                        <Avatar className="w-28 h-28 sm:w-32 sm:h-32 border-4 border-primary/30 shadow-lg transform transition-all duration-300 hover:scale-105">
+                            {user.image ? (
+                                <AvatarImage src={user.image} alt={user.username || "Pengguna"} />
+                            ) : (
+                                <AvatarFallback className="bg-green-100 text-green-700 text-4xl font-bold">
+                                    {user.username?.charAt(0).toUpperCase() || 'U'}
+                                </AvatarFallback>
+                            )}
+                        </Avatar>
+                        {/* Tombol dan Dialog Edit Gambar Profil */}
+                        <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="absolute bottom-0 right-0 rounded-full w-8 h-8 md:w-9 md:h-9"
+                                    aria-label="Edit Profile Image"
+                                >
+                                    <ImageIcon className="w-4 h-4" />
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle className="text-2xl font-bold">Edit Foto Profil</DialogTitle>
+                                    <DialogDescription className="text-muted-foreground">Pilih gambar profil Anda.</DialogDescription>
+                                </DialogHeader>
+                                <div className="mt-4">
+                                    <RadioGroup
+                                        value={newImageUrl}
+                                        onValueChange={setNewImageUrl}
+                                        className="grid grid-cols-3 gap-2"
+                                    >
+                                        {availableAvatars.map((avatarUrl, index) => (
+                                            <div key={index} className="flex flex-col items-center gap-2">
+                                                <Label htmlFor={`avatar-${index}`} className="cursor-pointer">
+                                                    <Image
+                                                        src={avatarUrl}
+                                                        alt={`Avatar ${index + 1}`}
+                                                        width={96}
+                                                        height={96}
+                                                        className="rounded-full object-cover border-2 border-transparent data-[state=checked]:border-blue-500 transition-all duration-200 hover:scale-105"
+                                                        data-state={newImageUrl === avatarUrl ? 'checked' : 'unchecked'}
+                                                    />
+                                                </Label>
+                                                <RadioGroupItem value={avatarUrl} id={`avatar-${index}`} className="sr-only" />
+                                            </div>
+                                        ))}
+                                    </RadioGroup>
+                                </div>
+                                <DialogFooter className="mt-6 flex-row-reverse sm:justify-end gap-2">
+                                    <Button variant="ghost" onClick={() => setIsImageDialogOpen(false)}>Batal</Button>
+                                    <Button onClick={handleSaveProfileImage} disabled={isSavingImage}>
+                                        {isSavingImage ? (<Loader2Icon className="mr-2 h-4 w-4 animate-spin" />) : ('Simpan')}
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
 
                     <div className="flex-1 text-center sm:text-left space-y-3">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full">
                             <CardTitle className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white leading-tight">
                                 {user.username || 'Tamu'}
                             </CardTitle>
-                            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                            {/* Tombol dan Dialog Edit Username */}
+                            <Dialog open={isUsernameDialogOpen} onOpenChange={setIsUsernameDialogOpen}>
                                 <DialogTrigger asChild>
                                     <Button variant="outline" size="sm" className="mt-3 sm:mt-0 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                         <Pencil className="w-4 h-4 mr-1.5" />
-                                        <span>Edit</span>
+                                        <span>Edit Username</span>
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent>
@@ -179,11 +320,11 @@ export default function ProfilePage() {
                                         />
                                     </div>
                                     <DialogFooter className="mt-6 flex-row-reverse sm:justify-end gap-2">
-                                        <Button variant="ghost" onClick={() => setIsDialogOpen(false)} className="px-4 py-2">
+                                        <Button variant="ghost" onClick={() => setIsUsernameDialogOpen(false)} className="px-4 py-2">
                                             Batal
                                         </Button>
-                                        <Button onClick={handleSave} disabled={isSaving} className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground">
-                                            {isSaving ? (
+                                        <Button onClick={handleSaveUsername} disabled={isSavingUsername} className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground">
+                                            {isSavingUsername ? (
                                                 <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
                                             ) : (
                                                 'Simpan'

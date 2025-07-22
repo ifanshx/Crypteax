@@ -14,6 +14,10 @@ import { getAllCollections, Collection } from '@/lib/data/collections';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { MobileSheetSidebar } from './MobileSheetSidebar';
+import { useBalance } from 'wagmi';
+import { useAppKitAccount } from '@reown/appkit/react';
+import { formatBalance } from '@/lib/helper'; // Import formatBalance from helper
+import { formatUnits } from 'viem'; // Import formatUnits from viem for converting bigint to string with decimals
 
 export function DashboardTopbar() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -25,6 +29,22 @@ export function DashboardTopbar() {
 
     const router = useRouter();
     const allCollections = React.useMemo(() => getAllCollections(), []);
+
+    // Get connected wallet address
+    const { address, isConnected } = useAppKitAccount();
+
+    // Ensure the address is explicitly typed as `0x${string}` or undefined
+    const walletAddress = address as `0x${string}` | undefined; // Type assertion here
+
+    // Fetch TEA balance for the connected wallet
+    const { data: teaBalance, isLoading: isTeaBalanceLoading } = useBalance({
+        address: walletAddress, // Use the type-asserted walletAddress
+        chainId: 10218, // Tea Sepolia Testnet Chain ID
+        query: {
+            enabled: isConnected && !!walletAddress, // Only fetch if wallet is connected and address is available
+            refetchInterval: 30_000, // Refresh every 30 seconds
+        },
+    });
 
     useEffect(() => {
         if (searchTerm.length > 0 && searchTerm !== debouncedSearchTerm) {
@@ -132,8 +152,18 @@ export function DashboardTopbar() {
             </div>
 
             <div className="flex items-center space-x-3 sm:space-x-4 mr-2 sm:mr-4">
+                {/* CTEA Balance (remains hardcoded as contract address is unavailable) */}
                 <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:block cursor-default">0.00 CTEA</span>
-                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:block cursor-default">0.00 TEA</span>
+                {/* TEA Balance (now dynamic) */}
+                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:block cursor-default">
+                    {isTeaBalanceLoading ? (
+                        <Loader2Icon className="h-4 w-4 animate-spin inline-block mr-1" />
+                    ) : teaBalance ? (
+                        `${formatBalance(formatUnits(teaBalance.value, teaBalance.decimals), 2, 4)} ${teaBalance.symbol}`
+                    ) : (
+                        '0.00 TEA'
+                    )}
+                </span>
                 <ConnectButton />
             </div>
         </header>
